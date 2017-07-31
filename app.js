@@ -1,0 +1,64 @@
+const express = require('express');
+const session = require('express-session');
+const mustacheExpress = require('mustache-express');
+const bodyParser = require('body-parser');
+
+var app = express();
+
+app.engine('mustache', mustacheExpress());
+app.set('views', './views');
+app.set('view engine', 'mustache');
+
+app.use(bodyParser.urlencoded({ extended: false }));
+
+app.use(express.static('public'));
+
+app.use(session({
+  secret: '2C44-4D44-WppQ38S',
+  resave: false,
+  saveUninitialized: true
+}));
+
+
+let user = {
+  'username' : 'austin', 'password' : 'password'
+};
+
+var auth = function(req, res, next) {
+  if (req.session && req.session.admin) {
+    return next();
+  } else {
+    return res.sendStatus(401);
+  }
+};
+
+app.get('/', function(req, res) {
+  if (req.session && req.session.admin) {
+    res.redirect('/content');
+  } else {
+    res.redirect('/login');
+  }
+});
+
+app.get('/login', function(req, res) {
+  res.render('login');
+});
+
+app.post('/login', function(req, res) {
+  if (req.body.username === user.username && req.body.password === user.password) {
+    req.session.admin = true;
+    res.redirect('/');
+}});
+
+app.get('/content', auth, function(req, res) {
+  res.render('contentpage');
+});
+
+app.post('/logout', function(req, res) {
+  req.session.destroy();
+  res.render('logout');
+});
+
+app.listen(3000, function() {
+  console.log('Friday started on port 3000...');
+});
